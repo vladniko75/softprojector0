@@ -8,7 +8,6 @@ jobs:
     runs-on: windows-2022
 
     steps:
-
     - name: Checkout repo at commit
       uses: actions/checkout@v4
       with:
@@ -38,16 +37,36 @@ jobs:
       shell: cmd
       working-directory: softprojector\src
       run: |
-        nmake
+        nmake || exit /b 1
+
+    - name: Show build outputs
+      shell: cmd
+      working-directory: softprojector\src
+      run: |
+        echo ==== release folder ====
+        if exist release dir release
+        echo ==== src root ====
+        dir
+        echo ==== recursive exe search ====
+        dir /s /b *.exe
 
     - name: Deploy Qt
       shell: cmd
       working-directory: softprojector\src
       run: |
-        windeployqt --release release\softProjector.exe
+        for /r %%F in (*.exe) do (
+          echo Found EXE: %%F
+          windeployqt --release "%%F"
+          goto :done
+        )
+        echo No EXE found
+        exit /b 1
+        :done
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
         name: softprojector-win64
-        path: softprojector\src\release\*
+        path: |
+          softprojector\src\release\*
+          softprojector\src\*.exe
