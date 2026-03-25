@@ -1,51 +1,53 @@
-name: Build SoftProjector Qt6
+name: Build SoftProjector
 
 on:
   workflow_dispatch:
-  push:
-    branches: [ master, main ]
 
 jobs:
-  build-windows:
+  build:
     runs-on: windows-2022
 
     steps:
-      - name: Checkout exact commit
-        uses: actions/checkout@v4
-        with:
-          repository: SoftProjector/softprojector
-          ref: 97a88e7295a92830ba70f34552c5a5f3a1043efd
 
-      - name: Install Qt 6
-        uses: jurplel/install-qt-action@v4
-        with:
-          version: 6.5.3
-          host: windows
-          target: desktop
-          arch: win64_msvc2019_64
-          modules: qtmultimedia qt5compat
+    - name: Checkout repo at commit
+      uses: actions/checkout@v4
+      with:
+        repository: SoftProjector/softprojector
+        ref: 97a88e7295a92830ba70f34552c5a5f3a1043efd
+        path: softprojector
 
-      - name: Set up MSVC
-        uses: ilammy/msvc-dev-cmd@v1
+    - name: Install Qt
+      uses: jurplel/install-qt-action@v4
+      with:
+        version: 6.5.3
+        host: windows
+        target: desktop
+        arch: win64_msvc2019_64
+        modules: qtmultimedia qt5compat
 
-      - name: qmake
-        shell: cmd
-        run: |
-          qmake softProjector.pro CONFIG+=release
+    - name: Setup MSVC
+      uses: ilammy/msvc-dev-cmd@v1
 
-      - name: build
-        shell: cmd
-        run: |
-          nmake
+    - name: qmake
+      shell: cmd
+      working-directory: softprojector\src
+      run: |
+        qmake softProjector.pro CONFIG+=release
 
-      - name: Deploy Qt runtime
-        shell: cmd
-        run: |
-          windeployqt --release --qmldir . release\softProjector.exe
+    - name: Build
+      shell: cmd
+      working-directory: softprojector\src
+      run: |
+        nmake
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: softprojector-win64
-          path: |
-            release\*
+    - name: Deploy Qt
+      shell: cmd
+      working-directory: softprojector\src
+      run: |
+        windeployqt --release release\softProjector.exe
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: softprojector-win64
+        path: softprojector\src\release\*
